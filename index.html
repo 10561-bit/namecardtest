@@ -4,342 +4,156 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Identity | Namecard</title>
-  <!-- 引入 Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-  
   <style>
-    :root {
-      --bg-dark: #07090e;
-      --card-bg: rgba(18, 22, 32, 0.78);
-      --gold: #d4af37;
-      --gold-light: #f3e5ab;
-      --text-main: #f0f4f8;
-      --text-muted: #94a3b8;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
+      background-color: #07090e;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      overflow: hidden; /* 动画播放时防止页面滚动 */
       display: flex;
       justify-content: center;
       align-items: center;
+      height: 100vh;
     }
 
-    /* 动态粒子画布背景 */
-    #bg-canvas {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    /* 1. 启动弹窗层 (Click to Enter) */
+    /* 1. 启动按钮层 */
     #start-overlay {
       position: fixed;
       inset: 0;
-      background: radial-gradient(circle at center, #111622 0%, #05070a 100%);
+      background: #07090e;
       z-index: 100;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      text-align: center;
       cursor: pointer;
-      transition: opacity 0.8s ease, visibility 0.8s ease;
-    }
-    #start-overlay.hidden {
-      opacity: 0;
-      visibility: hidden;
-    }
-    .eyebrow {
-      font-size: 0.75rem;
-      letter-spacing: 0.3em;
-      color: var(--gold);
-      margin-bottom: 1rem;
-      text-transform: uppercase;
-    }
-    .intro-name {
-      font-family: 'Cinzel', serif;
-      font-size: 2.4rem;
-      letter-spacing: 0.12em;
-      line-height: 1.2;
-      margin-bottom: 0.75rem;
-      background: linear-gradient(135deg, #fff, var(--gold));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .intro-sub {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-bottom: 2.5rem;
     }
     .sound-hint {
-      font-size: 0.8rem;
-      color: var(--gold-light);
-      border: 1px solid rgba(212, 175, 55, 0.4);
-      padding: 0.6rem 1.4rem;
-      border-radius: 999px;
+      color: #d4af37;
+      border: 1px solid #d4af37;
+      padding: 10px 20px;
+      border-radius: 50px;
       animation: pulse 2s infinite;
     }
-
     @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.85; }
+      0%, 100% { transform: scale(1); opacity: 0.8; }
       50% { transform: scale(1.05); opacity: 1; }
     }
 
-    /* 2. 主名片容器 */
-    main {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 440px;
-      margin: 2rem 1rem;
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(212, 175, 55, 0.25);
-      border-radius: 24px;
-      padding: 2.5rem 1.75rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 1s ease 0.3s;
+    /* 2. 电影感分镜动画层 */
+    #movie-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: #07090e;
+      display: none; /* 默认隐藏，点击后用 JS 打开 */
     }
-    main.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* 头像与个人信息 */
-    .profile-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .avatar-wrap {
-      width: 110px;
-      height: 110px;
-      margin: 0 auto 1.25rem;
-      border-radius: 50%;
-      padding: 3px;
-      background: linear-gradient(135deg, var(--gold), transparent, var(--gold));
-    }
-    .avatar-wrap img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 50%;
-      background: #1e293b;
-    }
-    h1 {
-      font-family: 'Cinzel', serif;
-      font-size: 1.65rem;
-      letter-spacing: 0.06em;
-      margin-bottom: 0.4rem;
-    }
-    .role-title {
-      color: var(--gold);
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-    .company-name {
-      color: var(--text-muted);
-      font-size: 0.82rem;
-    }
-
-    /* 标签区块 (Credentials & Licences) */
-    .section-title {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      color: var(--gold);
-      margin: 1.5rem 0 0.75rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 0.4rem;
-    }
-    .badge-group {
+    .scene {
+      position: absolute;
+      inset: 0;
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      opacity: 0;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: #d4af37;
     }
-    .badge {
-      font-size: 0.78rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(212, 175, 55, 0.2);
-      color: var(--text-main);
+    /* 控制每一幕淡入淡出的动画公式 */
+    @keyframes playScene {
+      0% { opacity: 0; transform: scale(0.95); }
+      20% { opacity: 1; transform: scale(1); }
+      80% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.05); }
     }
+    
+    /* 为每一幕设置不同的出场时间 */
+    .scene-1 { animation: playScene 3s ease forwards 0s; }
+    .scene-2 { animation: playScene 3s ease forwards 3s; }
+    .scene-3 { animation: playScene 3s ease forwards 6s; }
 
-    /* 联系方式按钮 */
-    .contact-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin-top: 1.75rem;
+    /* 3. 最终的名片层 */
+    #card-main {
+      background: #161f30;
+      border: 1px solid #d4af37;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      max-width: 350px;
+      width: 90%;
+      z-index: 10;
+      display: none; /* 动画播完后再显示 */
+      animation: fadeInCard 2s ease forwards;
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      color: var(--text-main);
-      background: rgba(212, 175, 55, 0.12);
-      border: 1px solid rgba(212, 175, 55, 0.35);
-      padding: 0.75rem 1rem;
-      border-radius: 12px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      transition: all 0.25s ease;
-    }
-    .btn:hover {
-      background: var(--gold);
+      display: block;
+      background: #d4af37;
       color: #000;
-      transform: translateY(-2px);
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      margin-top: 20px;
     }
-
-    footer {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
+    img { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; }
   </style>
 </head>
 <body>
 
-  <!-- 背景粒子画布 -->
-  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+  <!-- 音频播放器 (隐藏) -->
+  <audio id="bg-music" src="bgm.mp3" loop></audio>
 
-  <!-- 1. 点击启动层 -->
-  <div id="start-overlay" role="dialog" aria-label="Start">
-    <p class="eyebrow">DIGITAL IDENTITY</p>
-    <h2 class="intro-name">Pang<br>HERE</h2>
-    <p class="intro-sub">Global loan · Practice Broker</p>
-    <p class="sound-hint">Tap to Enter · Best with sound on 🔊</p>
+  <!-- 第 1 阶段：点击启动界面 -->
+  <div id="start-overlay">
+    <h2 style="color: #fff; margin-bottom: 20px;">YOUR NAME</h2>
+    <div class="sound-hint">Tap to Enter 🔊</div>
   </div>
 
-  <!-- 2. 主名片内容 -->
-  <main id="card-main">
-    <section class="profile-header">
-      <div class="avatar-wrap">
-        <!-- 把 photo.jpg 放在同一个文件夹，若没有图片会自动显示默认占位图 -->
-        <img src="photo.jpg" alt="Profile Portrait" onerror="this.src='https://via.placeholder.com/150/111622/d4af37?text=VIP'">
-      </div>
-      <h1>Pang Pang</h1>
-      <div class="role-title">Practice Broker / Financial Advisor</div>
-      <p class="company-name">Settle Down Sdn Bhd</p>
-    </section>
+  <!-- 第 2 阶段：电影分镜 -->
+  <div id="movie-intro">
+    <div class="scene scene-1">01 / INTRODUCTION<br><br><span style="color:#fff">heloooooo</span></div>
+    <div class="scene scene-2">02 / weeeeeeeeeS<br><br><span style="color:#fff">Nice to meet you</span></div>
+    <div class="scene scene-3">03 / blablalba<br><br><span style="color:#fff">Welcome to how r u Office</span></div>
+  </div>
 
-    <section>
-      <div class="section-title">What I have</div>
-      <div class="badge-group">
-        <span class="badge">not only this</span>
-        <span class="badge">this</span>
-        <span class="badge">that</span>
-        <span class="badge">and this</span>
-      </div>
-
-      <div class="section-title">Licences &amp; Highlights</div>
-      <div class="badge-group">
-        <span class="badge">Licensed car</span>
-        <span class="badge">Licensed motor</span>
-        <span class="badge">4+ Years Driving Experience</span>
-      </div>
-    </section>
-
-    <nav class="contact-grid" aria-label="Contact links">
-      <a class="btn" href="tel:+60123456789">📞 Call</a>
-      <a class="btn" href="mailto:yourname@example.com">✉️ Email</a>
-      <a class="btn" href="https://wa.me/60123456789" target="_blank" rel="noopener">💬 WhatsApp</a>
-      <a class="btn" href="https://www.linkedin.com/" target="_blank" rel="noopener">🔗 LinkedIn</a>
-    </nav>
-
-    <footer>
-      Thank you for looking<br>
-      No ads · No trackers<br>
-      © 2026 Pang Pang. All rights reserved.
-    </footer>
-  </main>
+  <!-- 第 3 阶段：真正的名片 -->
+  <div id="card-main">
+    <img src="photo.jpg" alt="Profile">
+    <h2 style="margin:0;">Pang Pang</h2>
+    <p style="color:#94a3b8; font-size: 0.9rem;">Practice broker | Global loan and insurance</p>
+    <a class="btn" href="https://wa.me/60123456789">WhatsApp Me</a>
+  </div>
 
   <script>
-    // 1. 点击进入并播放合成欢迎音效 (Web Audio API)
-    const overlay = document.getElementById('start-overlay');
-    const cardMain = document.getElementById('card-main');
-
-    function playWelcomeChime() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const notes = [261.63, 329.63, 392.00, 523.25]; // C大调和弦音高
-        notes.forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0.001, ctx.currentTime + i * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + i * 0.12 + 0.05);
-          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.12 + 1.8);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + i * 0.12);
-          osc.stop(ctx.currentTime + i * 0.12 + 1.8);
-        });
-      } catch (e) {}
-    }
-
-    overlay.addEventListener('click', () => {
-      playWelcomeChime();
-      overlay.classList.add('hidden');
-      cardMain.classList.add('visible');
+    // 这里的代码负责控制点击后的流程
+    document.getElementById('start-overlay').addEventListener('click', function() {
+      
+      // 1. 隐藏启动按钮
+      this.style.display = 'none';
+      
+      // 2. 播放音乐
+      document.getElementById('bg-music').play();
+      
+      // 3. 开始播放电影分镜
+      document.getElementById('movie-intro').style.display = 'block';
+      
+      // 4. 设定一个计时器 (9000毫秒 = 9秒) 
+      // 9秒后隐藏分镜，显示最终名片
+      setTimeout(function() {
+        document.getElementById('movie-intro').style.display = 'none';
+        document.getElementById('card-main').style.display = 'block';
+        document.body.style.overflow = 'auto'; // 恢复页面上下滑动
+      }, 9000);
+      
     });
-
-    // 2. Canvas 金色微粒背景动画
-    const canvas = document.getElementById('bg-canvas');
-    const c = canvas.getContext('2d');
-    let particles = [];
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    for (let i = 0; i < 45; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.8 + 0.5,
-        dx: (Math.random() - 0.5) * 0.4,
-        dy: (Math.random() - 0.5) * 0.4,
-        alpha: Math.random() * 0.6 + 0.2
-      });
-    }
-
-    function animate() {
-      c.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.dx;
-        p.y += p.dy;
-        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
-        c.beginPath();
-        c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        c.fillStyle = `rgba(212, 175, 55, ${p.alpha})`;
-        c.fill();
-      });
-      requestAnimationFrame(animate);
-    }
-    animate();
   </script>
+
 </body>
 </html>
